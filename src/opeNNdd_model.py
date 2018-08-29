@@ -57,7 +57,7 @@ class OpeNNdd_Model:
         self.storage_folder = storage_folder #storage folder for model and logs
         self.model_folder = os.path.join(storage_folder, 'tmp', str(self.id))
         self.log_folder = os.path.join(storage_folder, 'logs', str(self.id))
-        None if self.existing_model else os.makedirs(self.model_folder)
+        #None if self.existing_model else os.makedirs(self.model_folder)
         self.db = open_data(hdf5_file, batch_size, db_mode, self.id) #handle for the OpeNNdd dataset
         self.conv_layers = conv_layers
         self.conv_kernels = conv_kernels
@@ -381,6 +381,8 @@ class OpeNNdd_Model:
                 best_error = self.validate(sess)
             else:
                 best_error = float('inf') #make initial error an evaluation on validation set prior to any training
+                os.makedirs(self.model_folder)
+
             while True: #we are going to find the number of epochs
                 #if the number of training epochs is greater than the minimum number specified, and the model has not improved after a specified number of iterations, stop training
                 if (stop_count > self.stop_threshold):
@@ -518,24 +520,25 @@ class OpeNNdd_Model:
 
 if __name__ == '__main__':
     #Constants
-    BATCH_SIZE = 6 #images per batch
+    BATCH_SIZE = 25 #images per batch
     CHANNELS = 6
     HDF5_DATA_FILE = str(sys.argv[1]) #path to hdf5 data file
     MODEL1_STORAGE_DIR = str(sys.argv[2])  #path to where we would like our model stored
 
     if str(sys.argv[3]).lower() == "gpu": #argument for whether or not 'cpu' or 'gpu' mode
-        model = OpeNNdd_Model(HDF5_DATA_FILE, BATCH_SIZE, CHANNELS,       #sample gpu model that should fit on 3gb gpu
+        model = OpeNNdd_Model(HDF5_DATA_FILE, BATCH_SIZE,       #sample gpu model that should fit on 3gb gpu
                                 [32,64], [5,5], [], [2,2], [0.4],
-                                [1024,1], tf.losses.mean_squared_error,
-                                tf.train.AdamOptimizer(1e-4), 'CPCPDHH',
-                                MODEL1_STORAGE_DIR, True)
+                                [1024], tf.losses.mean_squared_error,
+                                tf.train.AdamOptimizer(1e-4), 'CPCPDH',
+                                MODEL1_STORAGE_DIR, gpu_mode=True, db_mode='ru')
     else:
-        model = OpeNNdd_Model(HDF5_DATA_FILE, BATCH_SIZE, CHANNELS,        #sample model to run on cpu
+        model = OpeNNdd_Model(HDF5_DATA_FILE, BATCH_SIZE,        #sample model to run on cpu
                                 [32,64], [5,5], [], [2,2], [0.4],
-                                [1024, 1], tf.losses.mean_squared_error,
-                                tf.train.AdamOptimizer(1e-4), 'CPCPDHH',
-                                MODEL1_STORAGE_DIR, False)
+                                [1024], tf.losses.mean_squared_error,
+                                tf.train.AdamOptimizer(1e-4), 'CPCPDH',
+                                MODEL1_STORAGE_DIR, gpu_mode=False, db_mode='ru')
 
 
     model.train() #train the model
     model.test() #test the model and get the error
+
